@@ -151,6 +151,7 @@ class InterfaceSetting:
             if (
                 key
                 in [
+                    "enable",
                     "spoofmac",
                     "alias-address",
                     "alias-subnet",

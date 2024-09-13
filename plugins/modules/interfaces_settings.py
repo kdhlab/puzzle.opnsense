@@ -26,11 +26,6 @@ options:
       - "Technical identifier of the interface, used by hasync for example"
     type: str
     required: true
-  device:
-    description:
-      - Physical Device Name eg. vtnet0, ipsec1000 etc,.
-    type: str
-    required: true
   description:
     description:
       - Interface name shown in the GUI. Identifier in capital letters if not provided.
@@ -172,17 +167,50 @@ opnsense_configure_output:
         stdout_lines:
           - Generating RRD graphs...done.
 '''
+# pylint: enable=duplicate-code
 # fmt: on
-
+import ipaddress
+from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.puzzle.opnsense.plugins.module_utils.interfaces_settings_utils import (
-    InterfacesSet,
-    InterfaceSetting,
-    OPNSenseDeviceNotFoundError,
-    #OPNSenseDeviceAlreadyAssignedError,
+from ansible_collections.puzzle.opnsense.plugins.module_utils.config_utils import (
+    OPNsenseModuleConfig,
+    UnsupportedModuleSettingError,
+    UnsupportedVersionForModule,
+)
+
+from ansible_collections.puzzle.opnsense.plugins.module_utils.interfaces_assignments_utils import (
     OPNSenseGetInterfacesError,
 )
 
+from ansible_collections.puzzle.opnsense.plugins.module_utils import (
+    opnsense_utils,
+    version_utils,
+)
+
+
+def validate_ipv4(ipaddr: str) -> bool:
+    """
+    Check if the given string is an IPv4 address
+    """
+    digits = ipaddr.split(".")
+    if len(digits) != 4:
+        return False
+    for num in digits:
+        if not (num.isdigit() and int(num) < 256):
+            return False
+    return True
+
+
+def validate_ip(ipaddr: str) -> bool:
+    """
+    Check if the given string is an IPv4 or IPv6 address
+    """
+    try:
+        ipaddress.ip_network(ipaddr, strict=False)
+        return True
+    except ValueError:
+        return False
 
 def main():
     """
@@ -191,7 +219,6 @@ def main():
 
     module_args = {
         "identifier": {"type": "str", "required": False},
-        #"device": {"type": "str", "required": False},
         "description": {"type": "str", "required": False},
         "enabled": {"type": "bool", "required": False, "default": False},
         "locked": {"type": "bool", "required": False, "default": False},
