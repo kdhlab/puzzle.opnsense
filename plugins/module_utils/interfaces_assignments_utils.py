@@ -7,6 +7,7 @@ interfaces_assignments_utils module_utils: Module_utils to configure OPNsense in
 
 from dataclasses import dataclass, asdict, field
 from typing import List, Optional, Dict, Any
+from pprint import pprint
 
 
 from xml.etree.ElementTree import Element, ElementTree, SubElement
@@ -68,8 +69,8 @@ class InterfaceAssignment:
         self,
         identifier: str,
         device: str,
-        descr: Optional[str] = None,
         enable: Optional[bool] = False,
+        descr: Optional[str] = None,
         **kwargs,
     ):
         self.identifier = identifier
@@ -77,6 +78,7 @@ class InterfaceAssignment:
         if descr is not None:
             self.descr = descr
         self.extra_attrs = kwargs
+        self.enable = enable
 
     @staticmethod
     def from_xml(element: Element) -> "InterfaceAssignment":
@@ -129,10 +131,8 @@ class InterfaceAssignment:
         # Special handling for 'device' and 'descr'
         SubElement(main_element, "if").text = interface_assignment_dict.get("device")
         SubElement(main_element, "descr").text = interface_assignment_dict.get("descr")
-        if getattr(self, "enable", True):
-            SubElement(main_element, "enable").text = "1"
-        else:
-            SubElement(main_element, "enable").text = "0"
+        if getattr(self, "enable", None):
+             SubElement(main_element, "enable").text = "1"
         # handle special cases
         if getattr(self, "alias-subnet", None):
             interface_assignment_dict["extra_attrs"]["alias-subnet"] = getattr(
@@ -380,19 +380,17 @@ class InterfacesSet(OPNsenseModuleConfig):
             raise OPNSenseDeviceNotFoundError(
                 "Device was not found on OPNsense Instance!"
             )
-
-        interface_to_update: Optional[InterfaceAssignment] = next(
-            (
-                interface
-                for interface in self._interfaces_assignments
-                if interface.device == interface_assignment.device
+        for interface in self._interfaces_assignments:
+            if (
+                interface.device == interface_assignment.device
                 or interface.identifier == interface_assignment.identifier
-            ),
-            None,
-        )
-
+            ):
+                interface_to_update = interface
+                print(interface_to_update)
+                break
+            else:
+                interface_to_update = None
         if not interface_to_update:
-
             interface_to_create: InterfaceAssignment = InterfaceAssignment(
                 identifier=interface_assignment.identifier,
                 device=interface_assignment.device,
@@ -401,7 +399,7 @@ class InterfacesSet(OPNsenseModuleConfig):
             )
 
             self._interfaces_assignments.append(interface_to_create)
-
+            pprint(interface_to_create)
             return
 
         if (
@@ -420,8 +418,18 @@ class InterfacesSet(OPNsenseModuleConfig):
             else:
                 raise OPNSenseDeviceAlreadyAssignedError(
                     "This device is already assigned, please unassign this device first"
-                )
 
+                                )
+        elif interface_assignment.enable != interface_to_update.enable:
+            if interface_assignment.enable:
+                # Merge extra_attrs
+                interface_assignment.extra_attrs.update(interface_to_update.extra_attrs)
+
+                # Update the existing interface
+                interface_to_update.__dict__.update(interface_assignment.__dict__)
+            else:
+                interface_assignment.enable = False
+                interface_to_update.__dict__.update(interface_assignment.__dict__)
         else:
             raise OPNSenseDeviceAlreadyAssignedError(
                 "This device is already assigned, please unassign this device first"

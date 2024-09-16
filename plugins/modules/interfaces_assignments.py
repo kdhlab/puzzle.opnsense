@@ -87,11 +87,11 @@ options:
       - 
     type: str
     required: false
-  ipv6_subnet:
-    description:
-      - 
-    type: int
-    required: false
+  # ipv6_subnet:
+  #   description:
+  #     - 
+  #   type: int
+  #   required: false
   ipv6_gateway:
     description:
       - 
