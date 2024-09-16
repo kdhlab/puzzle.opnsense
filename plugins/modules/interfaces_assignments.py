@@ -72,11 +72,11 @@ options:
       - 
     type: str
     required: false
-  ipv4_subnet:
-    description:
-      - 
-    type: int
-    required: false
+  # ipv4_subnet:
+  #   description:
+  #     - 
+  #   type: int
+  #   required: false
   ipv4_gateway:
     description:
       - 

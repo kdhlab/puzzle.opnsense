@@ -61,6 +61,7 @@ class InterfaceAssignment:
     device: str
     descr: Optional[str] = None
     enable: Optional[bool] = False
+    lock: Optional[bool] = False
 
     # since only the above attributes are needed, the rest is handled here
     extra_attrs: Dict[str, Any] = field(default_factory=dict, repr=False)
@@ -69,8 +70,9 @@ class InterfaceAssignment:
         self,
         identifier: str,
         device: str,
-        enable: Optional[bool] = False,
         descr: Optional[str] = None,
+        enable: Optional[bool] = False,
+        lock: Optional[bool] = False,
         **kwargs,
     ):
         self.identifier = identifier
@@ -133,6 +135,10 @@ class InterfaceAssignment:
         SubElement(main_element, "descr").text = interface_assignment_dict.get("descr")
         if getattr(self, "enable", None):
              SubElement(main_element, "enable").text = "1"
+             # Enumerate the basic attributes if the interface is enabled
+             
+        if getattr(self, "lock", None):
+             SubElement(main_element, "lock").text = "1"
         # handle special cases
         if getattr(self, "alias-subnet", None):
             interface_assignment_dict["extra_attrs"]["alias-subnet"] = getattr(
@@ -217,6 +223,14 @@ class InterfaceAssignment:
             "device": params.get("device"),
             "descr": params.get("description"),
             "enable": params.get("enabled"),
+            "lock": params.get("locked"),
+            # "blockpriv": params.get("block_private"),
+            # "blockbogons": params.get("block_bogons"),
+            # "spoofmac": params.get("mac_address"),
+            # "promisc": params.get("promiscuous_mode"),
+            # "mtu": params.get("mtu"),
+            # "mss": params.get("mss"),
+            # "gateway_interface": params.get("dynamic_gateway"),
         }
 
         interface_assignment_dict = {
